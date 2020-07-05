@@ -1,0 +1,7 @@
+# Variables to setup for localhost/control machine
+
+USERNAME: anhha
+CLUSTER_DIR: '/Users/{{ USERNAME }}/Documents/k8s-cluster'
+MASTER_DIR: '/Users/{{ USERNAME }}/Documents/k8s-cluster/kubemaster'
+WORKER1_DIR: '/Users/{{ USERNAME }}/Documents/k8s-cluster/kubeworker1'
+WORKER2_DIR: '/Users/{{ USERNAME }}/Documents/k8s-cluster/kubeworker2'

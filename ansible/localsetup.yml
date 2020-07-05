@@ -1,0 +1,43 @@
+# This playbook install VirtualBox & Vagrant and Ansible in your local machine 
+# and create directory to configure cluster VMs machine
+- hosts: localhost
+  connection: local 
+  gather_facts: false
+  vars_files:
+   - "{{ vars_folder_name }}/localhost.yml"
+
+  tasks:
+   - name: Install Virtual Box and Vagrant via Brew on controll node
+     homebrew_cask: name={{ item }}
+     with_items:
+      - virtualbox
+      - vagrant 
+
+   - name: Create k8s cluster directory and subdirectory
+     block:
+      - file:
+         path: '{{ CLUSTER_DIR }}'
+         state: absent 
+      
+      - file:
+         path: '{{ CLUSTER_DIR }}'
+         state: directory
+
+      - file:
+         path: '{{ item }}'
+         state: directory
+        with_items:
+         - '{{ MASTER_DIR }}'
+         - '{{ WORKER1_DIR }}'
+         - '{{ WORKER2_DIR }}'
+  
+  #  - include_role:
+  #      name: create-vms
+    
+  #  - include_role:
+  #      name: ssh-setup
+    
+
+
+     
+     

@@ -1,0 +1,5 @@
+# Inventory files for cluster hosts
+
+# vars_folder_name is the name of the folder at the root of the project
+# which contains variable files to be imported by various playbooks
+
