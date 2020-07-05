@@ -48,8 +48,9 @@ On each machine, you need to:
    ```
    network:
       version: 2
-      renderer: networkd
       ethernets:
+        enp0s3:
+          dhcp: true
         enp0s8:
           dhcp4: no
           dhcp6: no
@@ -60,7 +61,8 @@ On each machine, you need to:
      ```
    After making changes to the file, use **sudo netplan try** or **sudo netplan apply** to accept new config     
    Notes: 
-    * enp0s8 – network interface name.
+    * enp0s3 - network interface that takes the NAT connection of VirtualBox to access the internet
+    * enp0s8 – network interface that takes the Host only interface.
     * dhcp4 and dhcp6 – dhcp properties of an interface for IPv4 and IPv6 receptively.
     * addresses – sequence of static addresses to the interface.
     * gateway4 – IPv4 address for default gateway. (The `vboxnet` IP address)
