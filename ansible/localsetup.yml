@@ -4,7 +4,7 @@
   connection: local 
   gather_facts: false
   vars_files:
-   - "{{ vars_folder_name }}/localhost.yml"
+   - "vars_cluster/localhost.yml"
 
   tasks:
    - name: Install Virtual Box and Vagrant via Brew on controll node
@@ -13,7 +13,7 @@
       - virtualbox
       - vagrant 
 
-   - name: Create k8s cluster directory and subdirectory
+   - name: Create k8s cluster directory and subdirectories
      block:
       - file:
          path: '{{ CLUSTER_DIR }}'
@@ -27,17 +27,94 @@
          path: '{{ item }}'
          state: directory
         with_items:
-         - '{{ MASTER_DIR }}'
-         - '{{ WORKER1_DIR }}'
-         - '{{ WORKER2_DIR }}'
-  
-  #  - include_role:
-  #      name: create-vms
-    
-  #  - include_role:
-  #      name: ssh-setup
-    
+         - '{{ MASTER_DIR }}/{{ VM_ANSIBLE }}'
+         - '{{ WORKER1_DIR }}/{{ VM_ANSIBLE }}'
+         - '{{ WORKER2_DIR }}/{{ VM_ANSIBLE }}'
 
+   - name: Create Vagrantfile for each VM
+     file:
+      path: '{{ item }}/Vagrantfile'
+      state: touch
+     with_items:
+      - '{{ MASTER_DIR }}'
+      - '{{ WORKER1_DIR }}'
+      - '{{ WORKER2_DIR }}'
+    
+   - name: Create Master VM
+     copy:
+      dest: '{{ MASTER_DIR }}/Vagrantfile'
+      content: |
+       IMAGE_NAME = ""bento/ubuntu-20.04""
+       Vagrant.configure("2") do |config|
+         config.ssh.insert_key = false
 
+         config.vm.provider "virtualbox" do |v|
+            v.memory = 1024
+            v.cpus = 2
+         end
+      
+         config.vm.define "{{ MASTER_NAME }}" do |master|
+             master.vm.box = IMAGE_NAME
+             master.vm.network "private_network", ip: "{{ MASTER_IP }}"
+             master.vm.hostname = "{{ MASTER_NAME }}"
+             master.vm.provision "ansible" do |ansible|
+               ansible.playbook = "kubernetes-setup/master-playbook.yml"
+               ansible.extra_vars = {
+                  node_ip: "{{ MASTER_IP }}",
+               }
+             end
+         end
+
+   - name: Create Worker1 VM
+     copy:
+      dest: '{{ WORKER1_DIR }}/Vagrantfile'
+      content: |
+       IMAGE_NAME = ""bento/ubuntu-20.04""
+       Vagrant.configure("2") do |config|
+         config.ssh.insert_key = false
+
+         config.vm.provider "virtualbox" do |v|
+            v.memory = 1024
+            v.cpus = 2
+         end
+      
+         config.vm.define "{{ WORKER1_NAME }}" do |node|
+             node.vm.box = IMAGE_NAME
+             node.vm.network "private_network", ip: "{{ WORKER1_IP }}"
+             node.vm.hostname = "{{ WORKER1_NAME }}"
+             node.vm.provision "ansible" do |ansible|
+               ansible.playbook = "kubernetes-setup/node-playbook.yml"
+               ansible.extra_vars = {
+                  node_ip: "{{ WORKER1_IP }}",
+               }
+             end
+         end
+         
+   - name: Create Worker2 VM
+     copy:
+      dest: '{{ WORKER2_DIR }}/Vagrantfile'
+      content: |
+       IMAGE_NAME = ""bento/ubuntu-20.04""
+       Vagrant.configure("2") do |config|
+         config.ssh.insert_key = false
+
+         config.vm.provider "virtualbox" do |v|
+            v.memory = 1024
+            v.cpus = 2
+         end
+      
+         config.vm.define "{{ WORKER2_NAME }}" do |node|
+             node.vm.box = IMAGE_NAME
+             node.vm.network "private_network", ip: "{{ WORKER2_IP }}"
+             node.vm.hostname = "{{ WORKER2_NAME }}"
+             master.vm.provision "ansible" do |ansible|
+               ansible.playbook = "kubernetes-setup/node-playbook.yml"
+               ansible.extra_vars = {
+                  node_ip: "{{ WORKER2_IP }}",
+               }
+             end
+         end
+
+# TODO: Create playbooks for master and worker node
      
      

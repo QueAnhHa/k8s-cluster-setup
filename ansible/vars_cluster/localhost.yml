@@ -2,6 +2,15 @@
 
 USERNAME: anhha
 CLUSTER_DIR: '/Users/{{ USERNAME }}/Documents/k8s-cluster'
-MASTER_DIR: '/Users/{{ USERNAME }}/Documents/k8s-cluster/kubemaster'
-WORKER1_DIR: '/Users/{{ USERNAME }}/Documents/k8s-cluster/kubeworker1'
-WORKER2_DIR: '/Users/{{ USERNAME }}/Documents/k8s-cluster/kubeworker2'
+MASTER_DIR: '/Users/{{ USERNAME }}/Documents/k8s-cluster/{{ MASTER_NAME }}'
+WORKER1_DIR: '/Users/{{ USERNAME }}/Documents/k8s-cluster/{{ WORKER1_NAME }}'
+WORKER2_DIR: '/Users/{{ USERNAME }}/Documents/k8s-cluster/{{ WORKER2_NAME }}'
+
+#Directory in each VM to store the Ansible playbook provisioning that node environment
+VM_ANSIBLE: kubernetes-setup
+MASTER_NAME: kubemaster
+WORKER1_NAME: kubeworker1
+WORKER2_NAME: kubeworker2
+MASTER_IP: 192.168.56.81
+WORKER1_IP: 192.168.56.82
+WORKER2_IP: 192.168.56.83
