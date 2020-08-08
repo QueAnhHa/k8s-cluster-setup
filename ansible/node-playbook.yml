@@ -1,0 +1,110 @@
+---
+- hosts: all
+  become: true 
+  vars_files:
+   - "vars_cluster/cluster.yml"
+
+  tasks: 
+   - name: Install packages that allow apt to be used over HTTPS
+     apt:
+      name: "{{ packages }}"
+      state: present
+      update_cache: yes 
+     vars:
+      packages:
+       - apt-transport-https
+       - ca-certificates
+       - curl
+       - vim
+       - net-tools
+       - software-properties-common
+
+    - name: Remove swapfile from /etc/fstab 
+      mount: 
+        name: "{{ item }}"
+        fstype: swap
+        state: absent 
+      with_items:
+        - swap
+        - none 
+
+    - name: Disable swap
+      command: swappoff -a 
+      when: ansible_swaptotal_mb > 0
+
+    - name: Add an apt signing key for K8s
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+    
+    - name: Adding apt repository for K8s 
+      apt_repository:
+        repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+        state: present
+        filename: kubernetes.list
+
+    - name: Install k8s kubelet, kubeadm and kubectl
+     apt:
+      name: "{{ packages }}"
+      state: present
+      update_cache: yes
+     vars: 
+      packages:
+       - kubelet
+       - kubeadm
+       - kubectl 
+
+    - name: Configure node IP
+      lineinfile:
+        path: /etc/default/kubelet
+        line: KUBELET_EXTRA_ARGS=--cgroup-driver=systemd --container-runtime=remote --container-runtime-endpoint="unix:///var/run.crio/crio.sock
+
+    - name: Reload system
+      command: systemctl deamon-reload 
+
+    - name: Install Crio Runtime and start 
+      command: "{{ item }}"
+      with_items:
+       - echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+       - echo "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$VERSION/$OS/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:$VERSION.list
+       - curl -L https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:$VERSION/$OS/Release.key | apt-key add -
+       - curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/Release.key | apt-key add -
+       - apt-get install cri-o-1.17
+       - systemctl deamon-reload
+       - systemctl start crio
+
+    - name: IPV4 config 
+      command: "{{ item }}"
+      with_items:
+        - modprobe overlay
+        - modprobe br_netfilter
+        - cat > /etc/sysctl.d/99-kubernetes-cri.conf <<EOF
+          net.bridge.bridge-nf-call-iptables  = 1
+          net.ipv4.ip_forward                 = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+          EOF 
+        - sysctl --system
+
+    - name: Init the control plane 
+      command: kubeadm init --apiserver-advertise-address="{{ MASTER_IP}}" --pod-network-cidr=192.168.0.0/16
+
+    - name: Setup kubeconfig for vargrant user
+      command: " {{ item }}"
+      with_items:
+        - mkdir -p /home/vagrant/.kube
+        - cp -i /etc/kubernetes/admin.conf /home/vagrant/.kube/config
+        - chown vagrant:vagrant /home/vagrant/.kube/config
+
+    - name: Install Calico network
+      become: false
+      command: kubectl create -f https://docs.projectcalico.org/v3.4/getting-started/kubernetes/installation/hosted/calico.yaml
+
+    # Copy join command to node 
+    - name: Copy join command to node
+      copy: src=join-command dest=/tmp/join-command.sh mode=0777
+
+    - name: Join the node to cluster
+      command: sh /tmp/join-command.sh 
+
+
+   

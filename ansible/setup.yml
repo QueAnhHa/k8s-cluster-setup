@@ -4,7 +4,7 @@
   connection: local 
   gather_facts: false
   vars_files:
-   - "vars_cluster/localhost.yml"
+   - "vars_cluster/cluster.yml"
 
   tasks:
    - name: Install Virtual Box and Vagrant via Brew on controll node
@@ -48,6 +48,8 @@
        Vagrant.configure("2") do |config|
          config.ssh.insert_key = false
 
+         config.vm.disk: disk, size: "10GB", primary: true
+         
          config.vm.provider "virtualbox" do |v|
             v.memory = 1024
             v.cpus = 2
@@ -73,6 +75,8 @@
        Vagrant.configure("2") do |config|
          config.ssh.insert_key = false
 
+         config.vm.disk: disk, size: "10GB", primary: true
+
          config.vm.provider "virtualbox" do |v|
             v.memory = 1024
             v.cpus = 2
@@ -97,6 +101,8 @@
        IMAGE_NAME = ""bento/ubuntu-20.04""
        Vagrant.configure("2") do |config|
          config.ssh.insert_key = false
+
+         config.vm.disk: disk, size: "10GB", primary: true
 
          config.vm.provider "virtualbox" do |v|
             v.memory = 1024
