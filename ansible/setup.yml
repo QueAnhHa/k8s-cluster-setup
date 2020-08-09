@@ -7,29 +7,32 @@
    - "vars_cluster/cluster.yml"
 
   tasks:
-   - name: Install Virtual Box and Vagrant via Brew on controll node
-     homebrew_cask: name={{ item }}
-     with_items:
-      - virtualbox
-      - vagrant 
+   # - name: Install Virtual Box and Vagrant via Brew on controll node
+   #   homebrew_cask: name={{ item }}
+   #   with_items:
+   #    - virtualbox
+   #    - vagrant 
 
-   - name: Create k8s cluster directory and subdirectories
-     block:
-      - file:
-         path: '{{ CLUSTER_DIR }}'
-         state: absent 
+   # - name: Create k8s cluster directory and subdirectories
+   #   block:
+   #    - file:
+   #       path: '{{ CLUSTER_DIR }}'
+   #       state: absent 
       
-      - file:
-         path: '{{ CLUSTER_DIR }}'
-         state: directory
+   #    - file:
+   #       path: '{{ CLUSTER_DIR }}'
+   #       state: directory
 
-      - file:
-         path: '{{ item }}'
-         state: directory
-        with_items:
-         - '{{ MASTER_DIR }}/{{ VM_ANSIBLE }}'
-         - '{{ WORKER1_DIR }}/{{ VM_ANSIBLE }}'
-         - '{{ WORKER2_DIR }}/{{ VM_ANSIBLE }}'
+   #    - file:
+   #       path: '{{ item }}'
+   #       state: directory
+   #      with_items:
+   #       - '{{ MASTER_DIR }}/{{ VM_ANSIBLE }}'
+   #       - '{{ WORKER1_DIR }}/{{ VM_ANSIBLE }}'
+   #       - '{{ WORKER2_DIR }}/{{ VM_ANSIBLE }}'
+
+   # - name: Install Vagrant plugin for virtual disk
+   #   command: vagrant plugin install vagrant-disksize
 
    - name: Create Vagrantfile for each VM
      file:
@@ -39,88 +42,111 @@
       - '{{ MASTER_DIR }}'
       - '{{ WORKER1_DIR }}'
       - '{{ WORKER2_DIR }}'
-    
+
    - name: Create Master VM
      copy:
       dest: '{{ MASTER_DIR }}/Vagrantfile'
       content: |
-       IMAGE_NAME = ""bento/ubuntu-20.04""
+       IMAGE_NAME = "bento/ubuntu-20.04"
        Vagrant.configure("2") do |config|
          config.ssh.insert_key = false
+         config.disksize.size = '10GB'
 
-         config.vm.disk: disk, size: "10GB", primary: true
-         
          config.vm.provider "virtualbox" do |v|
             v.memory = 1024
             v.cpus = 2
          end
       
          config.vm.define "{{ MASTER_NAME }}" do |master|
-             master.vm.box = IMAGE_NAME
-             master.vm.network "private_network", ip: "{{ MASTER_IP }}"
-             master.vm.hostname = "{{ MASTER_NAME }}"
-             master.vm.provision "ansible" do |ansible|
+            master.vm.box = IMAGE_NAME
+            master.vm.network "private_network", ip: "{{ MASTER_IP }}"
+            master.vm.hostname = "{{ MASTER_NAME }}"
+            master.vm.provision "ansible" do |ansible|
                ansible.playbook = "kubernetes-setup/master-playbook.yml"
                ansible.extra_vars = {
                   node_ip: "{{ MASTER_IP }}",
                }
-             end
+            end
          end
+        end
+      
 
    - name: Create Worker1 VM
      copy:
       dest: '{{ WORKER1_DIR }}/Vagrantfile'
       content: |
-       IMAGE_NAME = ""bento/ubuntu-20.04""
+       IMAGE_NAME = "bento/ubuntu-20.04"
        Vagrant.configure("2") do |config|
          config.ssh.insert_key = false
-
-         config.vm.disk: disk, size: "10GB", primary: true
-
+         config.disksize.size = '10GB'
+   
          config.vm.provider "virtualbox" do |v|
             v.memory = 1024
             v.cpus = 2
          end
       
          config.vm.define "{{ WORKER1_NAME }}" do |node|
-             node.vm.box = IMAGE_NAME
-             node.vm.network "private_network", ip: "{{ WORKER1_IP }}"
-             node.vm.hostname = "{{ WORKER1_NAME }}"
-             node.vm.provision "ansible" do |ansible|
-               ansible.playbook = "kubernetes-setup/node-playbook.yml"
-               ansible.extra_vars = {
-                  node_ip: "{{ WORKER1_IP }}",
-               }
+            node.vm.box = IMAGE_NAME
+            node.vm.network "private_network", ip: "{{ WORKER1_IP }}"
+            node.vm.hostname = "{{ WORKER1_NAME }}"
+            node.vm.provision "ansible" do |ansible|
+            ansible.playbook = "kubernetes-setup/node-playbook.yml"
+            ansible.extra_vars = {
+               node_ip: "{{ WORKER1_IP }}",
+            }
              end
          end
+        end
          
    - name: Create Worker2 VM
      copy:
       dest: '{{ WORKER2_DIR }}/Vagrantfile'
       content: |
-       IMAGE_NAME = ""bento/ubuntu-20.04""
+       IMAGE_NAME = "bento/ubuntu-20.04"
        Vagrant.configure("2") do |config|
          config.ssh.insert_key = false
-
-         config.vm.disk: disk, size: "10GB", primary: true
-
+         config.disksize.size = '10GB'
+      
          config.vm.provider "virtualbox" do |v|
             v.memory = 1024
             v.cpus = 2
          end
       
          config.vm.define "{{ WORKER2_NAME }}" do |node|
-             node.vm.box = IMAGE_NAME
-             node.vm.network "private_network", ip: "{{ WORKER2_IP }}"
-             node.vm.hostname = "{{ WORKER2_NAME }}"
-             master.vm.provision "ansible" do |ansible|
-               ansible.playbook = "kubernetes-setup/node-playbook.yml"
-               ansible.extra_vars = {
-                  node_ip: "{{ WORKER2_IP }}",
-               }
-             end
+            node.vm.box = IMAGE_NAME
+            node.vm.network "private_network", ip: "{{ WORKER2_IP }}"
+            node.vm.hostname = "{{ WORKER2_NAME }}"
+            master.vm.provision "ansible" do |ansible|
+            ansible.playbook = "kubernetes-setup/node-playbook.yml"
+            ansible.extra_vars = {
+               node_ip: "{{ WORKER2_IP }}",
+            }
+            end
          end
+        end
 
-# TODO: Create playbooks for master and worker node
+   - name: Copy variables file 
+     copy:
+      src:  vars_cluster/cluster.yml
+      dest: '{{ item }}'
+     with_items:
+      - '{{ MASTER_DIR }}/{{ VM_ANSIBLE }}'
+      - '{{ WORKER1_DIR }}/{{ VM_ANSIBLE }}'
+      - '{{ WORKER2_DIR }}/{{ VM_ANSIBLE }}'
+
+   - name: Copy master playbook to master node
+     copy:
+      src: master-playbook.yml
+      dest: '{{ MASTER_DIR }}/{{ VM_ANSIBLE }}'
+     
+   
+   - name: Copy node playbook to worker node
+     copy:
+      src: node-playbook.yml
+      dest: '{{ item }}'
+     with_items: 
+      - '{{ WORKER1_DIR }}/{{ VM_ANSIBLE }}'
+      - '{{ WORKER2_DIR }}/{{ VM_ANSIBLE }}'
+
      
      
