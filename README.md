@@ -28,11 +28,12 @@ This setup will provide us access to the internet and the possibility to provide
 
 ## Configure IP addresses and Hostnames for VMs
 You can customize your own networking configuration. This is just an example of IP addresses and hostname I want to give to my machines.
-**Machine name	  Hostname	      IP**
+```
+Machine name	  Hostname	      IP
 kubemaster	      kubemaster	    192.168.56.81
 kubeworker1	      kubeworker1	    192.168.56.82
 kubeworker2	      kubeworker2	    192.168.56.83
-
+```
 On each machine, you need to:
 
 ### Verify unique Hostname, MAC address and product_uuid for every node
@@ -82,7 +83,7 @@ On each machine, you need to:
  ## Cluster Setup
  ### Disable swap on each machine to prevent kubelet high CPU usage
  Run this command: **swapoff -a**
- Or if you want to make it permanent, edit /etc/fstab file by commenting out this `swapfile none swap sw 0 0`
+ Or if you want to make it permanent, edit `/etc/fstab file` by commenting out this `swapfile none swap sw 0 0`
  Use this command to verify swap disabled: **free -h**
  
  ### Add k8s signing keys & repo on each machine 
@@ -111,13 +112,15 @@ On each machine, you need to:
  https://github.com/cri-o/cri-o
  
  * Install runtime:
-  **. /etc/os-release
+ ```
+  . /etc/os-release
     sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/x${NAME}_${VERSION_ID}/ /' >    /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
    wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/x${NAME}_${VERSION_ID}/Release.key -O- | sudo apt-key add -
    sudo apt-get update
    sudo apt-get install cri-o-1.17 (Or any version you'd like to install, make sure it's compatible with k8s version)
    systemctl daemon-reload
-   systemctl start crio**
+   systemctl start crio
+   ```
    
    Check crio status: **systemctl status crio**
    Stop crio: **systemctl stop crio**
@@ -142,7 +145,7 @@ On each machine, you need to:
     ```
   ### Initializing control plane (Master node)
     Run this cmd as root on control node:
-    **kubeadm init --apiserver-advertise-address=192.168.56.81 --pod-network0cidr=192.168.0.0/16**
+    **kubeadm init --apiserver-advertise-address=192.168.56.81 --pod-network-cidr=192.168.0.0/16**
     
     `--pod-network-cidr` is required by the pod communication plugin dirver. CIDR (Classless Inter Domain Routing) defines the address of your overlay network   (such as Flannel, Calico, etc.). The network mask also defines how many pods can run per node. The CIDIR network address and the network address used for your pod network add-on must be the same.
     `--apiserver-advertise-address` is the IP address that will be advertised by Kubernetes as its API server.
