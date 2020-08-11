@@ -29,8 +29,8 @@ This setup will provide us access to the internet and the possibility to provide
 ## Configure IP addresses and Hostnames for VMs
 You can customize your own networking configuration. This is just an example of IP addresses and hostname I want to give to my machines.
 ```
-Machine name	  Hostname	      IP
-kubemaster	      kubemaster	    192.168.56.81
+Machine name	      Hostname	           IP
+kubemaster	       kubemaster	     192.168.56.81
 kubeworker1	      kubeworker1	    192.168.56.82
 kubeworker2	      kubeworker2	    192.168.56.83
 ```
@@ -144,21 +144,27 @@ On each machine, you need to:
     sysctl --system
     ```
   ### Initializing control plane (Master node)
-    Run this cmd as root on control node:
-    **kubeadm init --apiserver-advertise-address=192.168.56.81 --pod-network-cidr=192.168.0.0/16**
     
-    `--pod-network-cidr` is required by the pod communication plugin dirver. CIDR (Classless Inter Domain Routing) defines the address of your overlay network   (such as Flannel, Calico, etc.). The network mask also defines how many pods can run per node. The CIDIR network address and the network address used for your pod network add-on must be the same.
-    `--apiserver-advertise-address` is the IP address that will be advertised by Kubernetes as its API server.
-    **Note down the token generated at the end of this process for joining worker nodes later on**
+    * Run this cmd as root on control node:
     
-    ** Install pod network communication add-on of your choice:
-    For example, you can install Calico:
-     **kubectl apply -f https://docs.projectcalico.org/v3.8/manifests/caclico.yaml 
+     kubeadm init --apiserver-advertise-address=192.168.56.81 --pod-network-cidr=192.168.0.0/16
+    
+    `--pod-network-cidr` is required by the pod communication plugin dirver. CIDR (Classless Inter Domain Routing) defines the address of your overlay network (such as Flannel, Calico, etc.). 
+    The network mask also defines how many pods can run per node. The CIDIR network address and the network address used for your pod network add-on must be the same.
+    `--apiserver-advertise-address` is the IP address that will be advertised by Kubernetes as its API server. 
+    
+    * Note down the token generated at the end of this process for joining worker nodes later on**
+    
+    * Install pod network communication add-on of your choice:
+      For example, you can install Calico:
+      
+       kubectl apply -f https://docs.projectcalico.org/v3.8/manifests/caclico.yaml 
      
   ### Join worker nodes into your cluster
    Use the token hash you got after initing the control plane to join other worker nodes to the cluster
    example:
-   **kubeadm join --token ....... --discovery-token-ca-cert-hashsha256**
+   
+     kubeadm join --token ....... --discovery-token-ca-cert-hashsha256
    
  ### Configure to access cluster using kubectl interface
  In order to communicate, you need k8s cluster config file to be placed in the home directory of the user from where you want to access the cluster. Once the
@@ -172,9 +178,9 @@ On each machine, you need to:
  ### Rollback or delete cluster
  * Use **kubectl reset preflight/update-cluster-status/remove-etcd-member/cleanup-node** to roll back or clean up env if you failed in one of those steps above
  * Delete cluster:
-  ***kubectl drain node-name --delete-local-data --force --ignore-daemonsets 
-   kubectl delete node node-name
-   sudo kubeadm reset ***
+   * kubectl drain node-name --delete-local-data --force --ignore-daemonsets
+   * kubectl delete node node-name
+   * sudo kubeadm reset
    
    
   
